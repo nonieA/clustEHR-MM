@@ -1,0 +1,20 @@
+dist
+**/build/*
+*.egg-info/*
+**/*.egg-info/*
+venv/
+.idea/
+clustEHR_MM/synthea-with-dependencies.jar
+
+*.DS_Store
+*.pyc
+*~
+**/.ipynb_checkpoints*
+
+# File types
+*.xlsx
+*.csv
+*.png
+
+# Folders
+**/models/*
