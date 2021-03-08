@@ -4,18 +4,23 @@ import re
 
 
 def write_out(disease):
-    dis_dict = disease_dict[disease]
+    dis_dict = disease_dict[disease]['states']
     top_states = {k:v for k,v in dis_dict.items() if k in state_dict[disease]}
     bottom_states = {k:v for k,v in dis_dict.items() if k not in state_dict[disease]}
     disease_path = 'modules/module_bases/' + disease
+    other_dict = disease_dict[disease].copy()
+    del other_dict['states']
     if os.path.isdir(disease_path) == False:
         os.mkdir(disease_path)
-    with open(disease_path + '/' + disease + 'top.json','w') as out_top:
+    with open(disease_path + '/' + disease + '_top.json','w') as out_top:
         json.dump(top_states,out_top)
-    with open(disease_path + '/' + disease + 'bottom.json','w') as out_bottom:
+    with open(disease_path + '/' + disease + '_bottom.json','w') as out_bottom:
         json.dump(bottom_states,out_bottom)
+    with open(disease_path + '/' + disease + '_framework.json','w') as out_fw:
+        json.dump(other_dict,out_fw)
 
-if __name__ == '__main__'
+if __name__ == '__main__':
+
     diseases = os.listdir('modules/modules')
     diseases = [re.sub('\.json','',i) for i in diseases if '.json' in i]
 
@@ -59,7 +64,6 @@ if __name__ == '__main__'
                 'osteoarthritis':['Initial', 'Veteran', 'Non_Veteran', 'Delay_Pre_Arthritis'],
                 'osteoporosis':['Initial', 'Female', 'Male'],
                 'rheumatoid_arthritis':states['rheumatoid_arthritis'][0],
-                'self_harm':states['self_harm'][0],
                 'sepsis':['Initial', 'Sepsis'],
                 'sinusitis':states['sinusitis'][0:1],
                 'sore_throat':states['sore_throat'][0:1],
