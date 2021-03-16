@@ -76,8 +76,15 @@ def write_top_dict(dis_top_dict,disease,mult):
     new_top = {
             "Initial": {
       "type": "Initial",
-      "direct_transition": "disease_based_transition"
+      "direct_transition": "test_disease"
     },
+    'test_disease':{
+        'type': 'ConditionOnset',
+        'codes': [{'system': 'SNOMED-CT',
+        'code': 611700000,
+        'display': 'Stomatitis'}],
+        'direct_transition': "Delay_Until_Disease"
+                    },
     "Delay_Until_Disease": {
       "type": "Delay",
       "range": {
@@ -85,13 +92,13 @@ def write_top_dict(dis_top_dict,disease,mult):
         "high": 2,
         "unit": "years"
       },
-      "direct_transition": "disease_based_transition2"
+      "direct_transition": "disease_based_transition"
     },
 
     "disease_based_transition":{
         "type": "Simple",
         "conditional_transition":[{
-            "transition": 'Initial_new',
+            "transition": 'old_initial',
         "condition": {
             "condition_type": "Attribute",
             "attribute": disease,
@@ -100,24 +107,9 @@ def write_top_dict(dis_top_dict,disease,mult):
             }
         },
         {
-        "transition": "Initial_old"
+        "transition": "Delay_Until_Disease"
         }]
-    },
-        "disease_based_transition2": {
-            "type": "Simple",
-            "conditional_transition": [{
-                "transition": 'initial_new',
-                "condition": {
-                    "condition_type": "Attribute",
-                    "attribute": disease,
-                    "operator": "==",
-                    "value": "true"
-                }
-            },
-                {
-                    "transition": "Delay_Until_Disease"
-                }]
-        }
+    }
     }
     top_dict_copy = copy.deepcopy(dis_top_dict)
     end_states = get_edit_states(top_dict_copy)
@@ -135,16 +127,12 @@ def write_top_dict(dis_top_dict,disease,mult):
                                                                    mult,
                                                                    list(top_dict_copy.keys()))
 
-    disease_top = rename_states(top_dict_copy, old = False)
-    old_top = rename_states(copy.deepcopy(dis_top_dict))
-    if disease_top['Initial_new']['type'] == 'Initial':
-        disease_top['Initial_new']['type'] = 'Simple'
+    top_dict_copy['old_initial'] = top_dict_copy.pop('Initial')
+    if top_dict_copy['old_initial']['type'] == 'Initial':
+        top_dict_copy['old_initial']['type'] = 'Simple'
 
-    if old_top['Initial_old']['type'] == 'Initial':
-        old_top['Initial_old']['type'] = 'Simple'
 
-    new_top.update(disease_top)
-    new_top.update(old_top)
+    new_top.update(top_dict_copy)
     return new_top
 
 
