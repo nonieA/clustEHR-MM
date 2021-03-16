@@ -1,31 +1,7 @@
-import re
 import json
 import os
 import copy
 from shutil import copytree
-with open('modules/module_bases/gout/gout_top.json') as f:
-    gouttop = json.load(f)
-
-with open('modules/module_bases/gout/gout_bottom.json') as h:
-    goutbottom = json.load(h)
-
-with open('modules/module_bases/copd/copd_top.json') as i:
-    copdtop = json.load(i)
-
-with open('modules/module_bases/copd/copd_bottom.json') as j:
-    copdbottom = json.load(j)
-
-with open('modules/module_bases/osteoporosis/osteoporosis_top.json') as k:
-    osteoporosistop = json.load(k)
-
-with open('modules/module_bases/osteoporosis/osteoporosis_bottom.json') as l:
-    osteoporosisbottom = json.load(l)
-
-with open('modules/module_bases/breast_cancer/breast_cancer_top.json') as m:
-    breast_cancertop = json.load(m)
-
-with open('modules/module_bases/breast_cancer/breast_cancer_bottom.json') as n:
-    breast_cancerbottom = json.load(n)
 
 def get_transitions(state_dict):
     transit_name = [i for i in state_dict.keys() if 'transition' in i][0]
@@ -57,34 +33,90 @@ def transition_multiplier(transit_dict,mult, states):
             i['distribution'] = x * mult
     return transit_dict_new
 
+def rename_transitions(state_dict,states_list):
+    state_dict2 = copy.deepcopy(state_dict)
+    transit_name = [i for i in state_dict2.keys() if 'transition' in i][0]
+    if transit_name == 'complex_transition':
+        for i in state_dict2[transit_name]:
+            for j in i['distributions']:
+                if j['transition'] in states_list:
+                    j['transition'] = j['transition'] + '_new'
+    else:
+        for i in state_dict2[transit_name]:
+            if i['transition'] in states_list:
+                i['transition'] = i['transition'] + '_new'
+    return state_dict2
+
+def rename_transitions_terminal(state_dict):
+    state_dict2 = copy.deepcopy(state_dict)
+    transit_name = [i for i in state_dict2.keys() if 'transition' in i][0]
+    if transit_name == 'complex_transition':
+        for i in state_dict2[transit_name]:
+            for j in i['distributions']:
+                if j['transition'] == 'Terminal':
+                    j['transition'] = 'Delay_Until_Disease'
+                if j['transition'] == 'Initial':
+                    j['transition'] = 'Initial_old'
+    else:
+        for i in state_dict2[transit_name]:
+            if i['transition'] == 'Terminal':
+                i['transition'] = 'Delay_Until_Disease'
+            if i['transition'] == 'Initial':
+                i['transition'] = 'Initial_old'
+    return state_dict2
+
+def rename_states(top_dict,old = True):
+    if old:
+        new_dict = {k + '_old' if k == 'Initial' else k: rename_transitions_terminal(v) for k,v in top_dict.items()}
+    else:
+        new_dict = {k + '_new':rename_transitions(v,top_dict.keys()) for k,v in top_dict.items()}
+    return new_dict
+
 def write_top_dict(dis_top_dict,disease,mult):
     new_top = {
-        'Initial':{
-            "type": "Delay",
-            "distribution": {
-                "kind": "EXACT",
-                "parameters": {
-                    "value": 1
-                }
-            },
-            "unit": "years",
-            "direct_transition": "disease_based_transition",
-            "name": "Initial"
-        },
-        "disease_based_transition":{
-            "type": "Simple",
-            "conditional_transition":[{
-                "transition": 'old_initial',
-            "condition": {
-                "condition_type": "Attribute",
-                "attribute": disease,
-                "operator": "==",
-                "value": "true"
+            "Initial": {
+      "type": "Initial",
+      "direct_transition": "disease_based_transition"
+    },
+    "Delay_Until_Disease": {
+      "type": "Delay",
+      "range": {
+        "low": 1,
+        "high": 2,
+        "unit": "years"
+      },
+      "direct_transition": "disease_based_transition2"
+    },
+
+    "disease_based_transition":{
+        "type": "Simple",
+        "conditional_transition":[{
+            "transition": 'Initial_new',
+        "condition": {
+            "condition_type": "Attribute",
+            "attribute": disease,
+            "operator": "==",
+            "value": "true"
             }
         },
-            {
-            "transition": "Initial"
-            }]
+        {
+        "transition": "Initial_old"
+        }]
+    },
+        "disease_based_transition2": {
+            "type": "Simple",
+            "conditional_transition": [{
+                "transition": 'initial_new',
+                "condition": {
+                    "condition_type": "Attribute",
+                    "attribute": disease,
+                    "operator": "==",
+                    "value": "true"
+                }
+            },
+                {
+                    "transition": "Delay_Until_Disease"
+                }]
         }
     }
     top_dict_copy = copy.deepcopy(dis_top_dict)
@@ -103,14 +135,20 @@ def write_top_dict(dis_top_dict,disease,mult):
                                                                    mult,
                                                                    list(top_dict_copy.keys()))
 
-    top_dict_copy['old_initial'] = top_dict_copy.pop('Initial')
-    if top_dict_copy['old_initial']['type'] == 'Initial':
-        top_dict_copy['old_initial']['type'] = 'Simple'
+    disease_top = rename_states(top_dict_copy, old = False)
+    old_top = rename_states(copy.deepcopy(dis_top_dict))
+    if disease_top['Initial_new']['type'] == 'Initial':
+        disease_top['Initial_new']['type'] = 'Simple'
 
-    new_top.update(top_dict_copy)
+    if old_top['Initial_old']['type'] == 'Initial':
+        old_top['Initial_old']['type'] = 'Simple'
+
+    new_top.update(disease_top)
+    new_top.update(old_top)
     return new_top
 
-def write_new_folder(disease_a,disease_b,out_folder,mult):
+
+def write_new_folder(disease_a,disease_b,out_folder,mult,addition):
 
     with open('modules/module_bases/' + disease_b + '/' + disease_b + '_top.json') as ft:
         top_dict = json.load(ft)
@@ -124,14 +162,14 @@ def write_new_folder(disease_a,disease_b,out_folder,mult):
     new_disease = copy.deepcopy(fw_dict)
     new_top = write_top_dict(top_dict,disease_a,mult)
     new_disease['states'] = {**new_top,**bottom_dict}
-    full_disease_out = 'clustEHR-MM/' + out_folder + '/' + disease_b
+    full_disease_out = 'clustEHR_MM/' + out_folder + '/' + disease_b + '_' + addition
 
-    if os.path.isdir('clustEHR-MM/' + out_folder) == False:
-        os.mkdir('clustEHR-MM/' + out_folder)
+    if os.path.isdir('clustEHR_MM/' + out_folder) == False:
+        os.mkdir('clustEHR_MM/' + out_folder)
 
     if os.path.isdir(full_disease_out) == False:
-        current = 'modules/module_bases/disease_b'
-        new = 'clustEHR-MM/' + out_folder + '/' + disease_b
+        current = 'modules/module_bases/' + disease_b
+        new = full_disease_out
         copytree(current,new)
 
     disease_files = os.listdir(full_disease_out)
@@ -141,9 +179,16 @@ def write_new_folder(disease_a,disease_b,out_folder,mult):
         if any(j in i for j in delete_list):
             os.remove(full_disease_out + '/' + i)
 
-    with open(full_disease_out + '/' + disease_b + '.json') as out:
-        json.dump(new_disease)
+    with open(full_disease_out + '/' + disease_b + '_' + addition+ '.json',"w") as out:
+        json.dump(new_disease,out)
+
+if __name__ == '__main__':
+
+    with open('modules/module_bases/gout/gout_top.json') as fb:
+        gout_top = json.load(fb)
 
 
+    with open('modules/module_bases/osteoporosis/osteoporosis_top.json') as fl:
+        osteoporosis_top = json.load(fl)
 
 
