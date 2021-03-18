@@ -52,4 +52,23 @@ if __name__ == '__main__':
 
         run_function('Diabetes','gout','test3','test_out3','test',10000,4,2)
         test = get_counts('Diabetes','Gout','test_out3')
-        test_out = pd.read_csv('test_out3/csv/conditions.csv')
+
+        test_out = pd.read_csv('test_out4/csv/conditions.csv')
+        test_out_counts = get_counts('Diabetes','Stomatitis','test_out3')
+
+        run_function('Diabetes', 'gout', 'test4', 'test_out4', 'test', 10000, 4, 2)
+        test_out_counts = get_counts('Diabetes', 'Stomatitis', 'test_out4')
+
+        run_function('Diabetes', 'gout', 'test5', 'test_out5', 'test', 10000, 4, 2)
+        test_out_counts = get_counts('Diabetes', 'Stomatitis', 'test_out4')
+        run_synthea('gout', 'test4', 10000, 'test_out8', 4, 'test')
+        test_out_counts = get_counts('Diabetes', 'Stomatitis', 'test_out8')
+
+        run_function('diabetes', 'gout', 'test8', 'test_out8', 'test', 10000, 4, 2)
+        test_out_counts = get_counts('Diabetes', 'Stomatitis', 'test_out8')
+
+        run_synthea('gout', 'test9', 10000, 'test_out9', 4, 'test')
+        test_out_counts3 = get_counts('Diabetes', 'Stomatitis', 'test_out9')
+
+        run_function('diabetes', 'gout', 'test10', 'test_out10', 'test', 10000, 4, 2)
+        test_out_counts = get_counts('Diabetes', 'Stomatitis', 'test_out10')

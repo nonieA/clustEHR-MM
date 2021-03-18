@@ -76,15 +76,9 @@ def write_top_dict(dis_top_dict,disease,mult):
     new_top = {
             "Initial": {
       "type": "Initial",
-      "direct_transition": "test_disease"
+      "direct_transition": "Delay_Until_Disease"
     },
-    'test_disease':{
-        'type': 'ConditionOnset',
-        'codes': [{'system': 'SNOMED-CT',
-        'code': 611700000,
-        'display': 'Stomatitis'}],
-        'direct_transition': "Delay_Until_Disease"
-                    },
+
     "Delay_Until_Disease": {
       "type": "Delay",
       "range": {
@@ -102,8 +96,8 @@ def write_top_dict(dis_top_dict,disease,mult):
         "condition": {
             "condition_type": "Attribute",
             "attribute": disease,
-            "operator": "==",
-            "value": "true"
+            "operator": '==',
+            'value':True
             }
         },
         {
@@ -135,8 +129,70 @@ def write_top_dict(dis_top_dict,disease,mult):
     new_top.update(top_dict_copy)
     return new_top
 
+def write_test_dict(dis_top_dict,disease,mult):
+    new_top = {
+            "Initial": {
+      "type": "Initial",
+      "direct_transition": "Delay_Until_Disease"
+    },
+    'test_disease':{
+        'type': 'ConditionOnset',
+        'codes': [{'system': 'SNOMED-CT',
+        'code': 611700000,
+        'display': 'Stomatitis'}],
+        'direct_transition': "old_initial"
+                    },
+    "Delay_Until_Disease": {
+      "type": "Delay",
+      "range": {
+        "low": 1,
+        "high": 2,
+        "unit": "years"
+      },
+      "direct_transition": "disease_based_transition"
+    },
 
-def write_new_folder(disease_a,disease_b,out_folder,mult,addition):
+    "disease_based_transition":{
+        "type": "Simple",
+        "conditional_transition":[{
+            "transition": 'test_disease',
+        "condition": {
+            "condition_type": "Attribute",
+            "attribute": disease,
+            "operator": '==',
+            'value':True
+            }
+        },
+        {
+        "transition": "Delay_Until_Disease"
+        }]
+    }
+    }
+    top_dict_copy = copy.deepcopy(dis_top_dict)
+    end_states = get_edit_states(top_dict_copy)
+
+    for i in end_states:
+        edit_dict = top_dict_copy[i]
+        transit_name = [i for i in edit_dict.keys() if 'transition' in i][0]
+        if transit_name == 'complex_transition':
+            for ind,val in enumerate(top_dict_copy[i][transit_name]):
+                top_dict_copy[i][transit_name][ind]['distributions'] = transition_multiplier(val['distributions'],
+                                                                                             mult,
+                                                                                             list(top_dict_copy.keys()))
+        else:
+            top_dict_copy[i][transit_name] = transition_multiplier(top_dict_copy[i][transit_name],
+                                                                   mult,
+                                                                   list(top_dict_copy.keys()))
+
+    top_dict_copy['old_initial'] = top_dict_copy.pop('Initial')
+    if top_dict_copy['old_initial']['type'] == 'Initial':
+        top_dict_copy['old_initial']['type'] = 'Simple'
+
+
+    new_top.update(top_dict_copy)
+    return new_top
+
+def write_new_folder(disease_a,disease_b,out_folder,mult,addition,test = False):
 
     with open('modules/module_bases/' + disease_b + '/' + disease_b + '_top.json') as ft:
         top_dict = json.load(ft)
@@ -148,7 +204,10 @@ def write_new_folder(disease_a,disease_b,out_folder,mult,addition):
         fw_dict = json.load(fw)
 
     new_disease = copy.deepcopy(fw_dict)
-    new_top = write_top_dict(top_dict,disease_a,mult)
+    if test:
+        new_top = write_test_dict(top_dict, disease_a, mult)
+    else:
+        new_top = write_top_dict(top_dict,disease_a,mult)
     new_disease['states'] = {**new_top,**bottom_dict}
     full_disease_out = 'clustEHR_MM/' + out_folder + '/' + disease_b + '_' + addition
 
@@ -179,4 +238,4 @@ if __name__ == '__main__':
     with open('modules/module_bases/osteoporosis/osteoporosis_top.json') as fl:
         osteoporosis_top = json.load(fl)
 
-
+    write_new_folder('diabetes', 'gout', 'test9', 2, 'test')
