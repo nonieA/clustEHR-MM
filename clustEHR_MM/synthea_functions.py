@@ -38,15 +38,6 @@ def get_counts(disease_a,disease_b,csv_file):
         return out_dict
 
 if __name__ == '__main__':
-        mef.write_new_folder('Diabetes','gout','test',2,'test')
-        run_synthea('gout','test',10000,'test_out',4,'test')
-        conditions = pd.read_csv('test_out/csv/conditions.csv')
-        conditions2 = conditions[['PATIENT','DESCRIPTION']]
-        conditions2['value'] = 1
-        cond3 = conditions2.groupby(['PATIENT','DESCRIPTION'])['value'].count().reset_index()
-        cond4 = cond3.pivot_table(index='PATIENT',columns='DESCRIPTION',values='value',fill_value=0)
-        gout = cond4[(cond4['Gout'] == 1) & (cond4['Diabetes'] == 0)]
-        gout_diabetes = cond4[(cond4['Gout'] == 1) & (cond4['Diabetes'] == 1)]
 
         base_line = get_counts('Diabetes','Gout','base_line')
 
