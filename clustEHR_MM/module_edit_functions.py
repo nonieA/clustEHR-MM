@@ -3,15 +3,26 @@ import os
 import copy
 from shutil import copytree
 
+def complex_condition_trans(transit_dict):
+    if 'transition' in transit_dict.keys():
+        return [transit_dict['transition']]
+    else:
+        return [i['transition'] for i in transit_dict['distributions']]
+
 def get_transitions(state_dict):
     transit_name = [i for i in state_dict.keys() if 'transition' in i][0]
     transit_dict = state_dict[transit_name]
     if transit_name == 'complex_transition':
-        transit_keys = [[j['transition'] for j in i['distributions']] for i in transit_dict]
+        transit_keys = [complex_condition_trans(i) for i in transit_dict]
         transit_keys = [j for i in transit_keys for j in i]
         transit_keys = list(set(transit_keys))
+    elif isinstance(transit_dict,str):
+        transit_keys = transit_dict
     else:
         transit_keys = [i['transition'] for i in transit_dict]
+    if type(transit_keys) != list:
+        transit_keys = [transit_keys]
+
     return transit_keys
 
 def get_edit_states(top_dict):
@@ -176,9 +187,10 @@ def write_test_dict(dis_top_dict,disease,mult):
         transit_name = [i for i in edit_dict.keys() if 'transition' in i][0]
         if transit_name == 'complex_transition':
             for ind,val in enumerate(top_dict_copy[i][transit_name]):
-                top_dict_copy[i][transit_name][ind]['distributions'] = transition_multiplier(val['distributions'],
-                                                                                             mult,
-                                                                                             list(top_dict_copy.keys()))
+                if 'distributions' in val.keys():
+                    top_dict_copy[i][transit_name][ind]['distributions'] = transition_multiplier(val['distributions'],
+                                                                                                 mult,
+                                                                                                 list(top_dict_copy.keys()))
         else:
             top_dict_copy[i][transit_name] = transition_multiplier(top_dict_copy[i][transit_name],
                                                                    mult,
@@ -209,10 +221,10 @@ def write_new_folder(disease_a,disease_b,out_folder,mult,addition,test = False):
     else:
         new_top = write_top_dict(top_dict,disease_a,mult)
     new_disease['states'] = {**new_top,**bottom_dict}
-    full_disease_out = 'clustEHR_MM/' + out_folder + '/' + disease_b + '_' + addition
+    full_disease_out =  out_folder + '/' + disease_b + '_' + addition
 
-    if os.path.isdir('clustEHR_MM/' + out_folder) == False:
-        os.mkdir('clustEHR_MM/' + out_folder)
+    if os.path.isdir(out_folder) == False:
+        os.mkdir(out_folder)
 
     if os.path.isdir(full_disease_out) == False:
         current = 'modules/module_bases/' + disease_b
@@ -231,8 +243,8 @@ def write_new_folder(disease_a,disease_b,out_folder,mult,addition,test = False):
 
 if __name__ == '__main__':
 
-    with open('modules/module_bases/gout/gout_top.json') as fb:
-        gout_top = json.load(fb)
+    with open('modules/module_bases/copd/copd_top.json') as fb:
+        copd_top = json.load(fb)
 
 
     with open('modules/module_bases/osteoporosis/osteoporosis_top.json') as fl:

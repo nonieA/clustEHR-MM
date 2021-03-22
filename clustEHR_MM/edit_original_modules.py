@@ -32,29 +32,29 @@ if __name__ == '__main__':
 
     states = {i:list(disease_dict[i]['states'].keys()) for i in diseases}
 
-    state_dict = {'allergic_rhinitis':states['allergic_rhinitis'][0:3],
-                'anemia___unknown_etiology':states['anemia___unknown_etiology'][0:6],
-                'appendicitis':states['appendicitis'][0:2],
-                'asthma':states['asthma'][0:2],
+    state_dict = {'allergic_rhinitis':states['allergic_rhinitis'][0:4],
+                'anemia___unknown_etiology':states['anemia___unknown_etiology'][0:7],
+                'appendicitis':['Initial','Male','Female'],
+                'asthma':states['asthma'][0:4],
                 'atopy':states['atopy'][0],
                 'attention_deficit_disorder':states['attention_deficit_disorder'][0],
                 'breast_cancer':['Initial','Male','Female'],
-                'bronchitis':states['bronchitis'][0],
+                'bronchitis':['Initial','Potential_Infection'],
                 'cerebral_palsy':['Initial','Male','Female','Age_and_Applicable_Time_Guard'],
-                'colorectal_cancer':states['colorectal_cancer'][0:1],
+                'colorectal_cancer':states['colorectal_cancer'][0:2],
                 'congestive_heart_failure':['Initial','Age Guard','Determine CHF'],
-                'copd':states['copd'][0:3],
+                'copd':states['copd'][0:4],
                 'cystic_fibrosis':['Initial','Potential_Onset'],
                 'dementia':states['dementia'][0],
-                'dermatitis':states['dermatitis'][0:3],
-                'ear_infections':states['ear_infections'][0:2],
+                'dermatitis':states['dermatitis'][0:4],
+                'ear_infections':states['ear_infections'][0:3],
                 'epilepsy':states['epilepsy'][0],
                 'fibromyalgia':states['fibromyalgia'][0],
                 'gallstones':['Initial','Female','Male'],
                 'gout':states['gout'][0],
                 'hypertension':['Initial','Wellness_Encounter','Included','Excluded','Wait Until Next Checkup',],
                 'hypothyroidism':['Initial','Age delay'],
-                'lung_cancer':states['lung_cancer'][0:2],
+                'lung_cancer':states['lung_cancer'][0:3],
                 'lupus':states['lupus'][0],
                 'metabolic_syndrome_disease':['Initial', 'Initial_Kidney_Health', 'Initial_Eye_Health',
                                               'Initial_Nerve_Health', 'Age_Guard', 'Chance_to_Onset_Hypertension',
@@ -65,10 +65,12 @@ if __name__ == '__main__':
                 'osteoporosis':['Initial', 'Female', 'Male'],
                 'rheumatoid_arthritis':states['rheumatoid_arthritis'][0],
                 'sepsis':['Initial','Age_guard'],
-                'sinusitis':states['sinusitis'][0:1],
-                'sore_throat':states['sore_throat'][0:1],
+                'sinusitis':states['sinusitis'][0:2],
+                'sore_throat':states['sore_throat'][0:2],
                 'spina_bifida':['Initial','Enter_Spina_Bifida'],
                 'urinary_tract_infections':states['urinary_tract_infections'][0]
                               }
-
+    with open('data/processed/disease_conditions.json') as gf:
+        test_dict = json.load(gf)
+    state_dict = {k:v for k,v in state_dict.items() if k in test_dict.keys()}
     [write_out(i) for i in state_dict.keys()]

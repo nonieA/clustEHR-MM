@@ -51,7 +51,11 @@ if __name__ == '__main__':
     redo_list = [k for k,v in unique_conds.items() if len(v) == 0]
     cond_dict2 = {i: run_basic_module(i,p = 10000,out_file = 'test_data2') for i in redo_list}
     new_cond_dict = {k: cond_dict2[k] if k in cond_dict2.keys() else cond_dict[k] for k in cond_dict.keys()}
-    unique_conds2 ={k:get_uniques(k,cond_dict2) for k in cond_dict2.keys()}
+    unique_conds2 ={k:get_uniques(k,new_cond_dict) for k in new_cond_dict.keys()}
     new_no = [k for k,v in unique_conds2.items() if len(v) == 0]
+    print(new_no)
+    final_conds = {k:v for k,v in unique_conds2.items() if k not in new_no}
+
     with open('data/processed/disease_conditions.json','w') as gf:
-        json.dump(unique_conds2,gf)
+        json.dump(final_conds,gf)
+
