@@ -20,6 +20,23 @@ def run_synthea(disease,module_file, pop,file_out,seed,addition):
         if run_thing.stdout.decode('utf-8').find('[0 loaded]') > -1:
                 raise ValueError('so the disease input doesnt link to a module')
 
+def run_synthea2(disease,module_file, pop,file_out,seed,addition):
+
+        module_str = module_file + '/' + disease + '_' + addition
+
+        synth_cmd = ("java -jar clustEHR_MM/synthea-with-dependencies.jar -a 18-100 -d " +
+                 module_str +
+                 " -p " +
+                 str(pop) +
+                 " -s " +
+                 str(seed) +
+                 " -c clustEHR_MM/synthea_config.txt --exporter.baseDirectory " +
+                 file_out)
+
+        run_thing = subprocess.run(synth_cmd, stdout=subprocess.PIPE)
+        if run_thing.stdout.decode('utf-8').find('[0 loaded]') > -1:
+                raise ValueError('so the disease input doesnt link to a module')
+
 def run_function(disease_a,disease_b,module_out,csv_out,addition,pop,seed,mult,test):
         mef.write_new_folder(disease_a,disease_b,module_out,mult,addition,test)
         run_synthea(disease_b,module_out,pop,csv_out,seed,addition)
@@ -34,6 +51,41 @@ def get_counts(disease_a,disease_b,csv_file,cond_dict):
 
                 conditions2['DESCRIPTION'] = conditions2['DESCRIPTION'].apply(
                         lambda x: disease_a if x in cond_dict[disease_a] else x)
+
+        conditions2['value'] = 1
+        cond3 = conditions2.groupby(['PATIENT','DESCRIPTION'])['value'].count().reset_index()
+        cond4 = cond3.pivot_table(index='PATIENT',columns='DESCRIPTION',values='value',fill_value=0)
+        no_disease_a = cond4[(cond4[disease_b] == 1) & (cond4[disease_a] == 0)]
+        with_disease_a = cond4[(cond4[disease_b] == 1) & (cond4[disease_a] == 1)]
+        just_disease_a = cond4[cond4[disease_a] == 1]
+        out_dict = {disease_b + '_no_' + disease_a: len(no_disease_a),
+                    disease_b + '_and_' + disease_a: len(with_disease_a),
+                    'just_' + disease_a: len(just_disease_a)}
+        return out_dict
+
+def run_function(disease_a,disease_b,module_out,csv_out,addition,pop,seed,mult,test):
+        mef.write_new_folder(disease_a,disease_b,module_out,mult,addition,test)
+        run_synthea(disease_b,module_out,pop,csv_out,seed,addition)
+
+def get_counts(disease_a,disease_b,csv_file,cond_dict):
+        conditions = pd.read_csv(csv_file + '/csv/conditions.csv')
+        conditions2 = conditions[['PATIENT','DESCRIPTION']]
+
+        if (disease_b == 'Stomatitis') and ('Stomatitis' not in list(conditions2['DESCRIPTION'])):
+                return 'no stomatitis'
+
+        elif disease_b != 'Stomatitis':
+                conditions2['DESCRIPTION'] = conditions2['DESCRIPTION'].apply(
+                        lambda x: disease_b if x in cond_dict[disease_b] else x)
+
+
+        if disease_a in cond_dict.keys():
+                conditions2['DESCRIPTION'] = conditions2['DESCRIPTION'].apply(
+                        lambda x: cond_dict[disease_a] if x in cond_dict[disease_a] else x)
+
+        if disease_a == 'diabetes':
+                disease_a = 'Diabetes'
+
 
         conditions2['value'] = 1
         cond3 = conditions2.groupby(['PATIENT','DESCRIPTION'])['value'].count().reset_index()
@@ -89,3 +141,5 @@ if __name__ == '__main__':
         with_disease_a = cond4[(cond4[disease_b] == 1) & (cond4[disease_a] == 1)]
         out_dict = {disease_b + '_no_' + disease_a: len(no_disease_a),
                     disease_b + '_and_' + disease_a: len(with_disease_a)}
+
+        conditions = pd.read_csv('test/csv_test/diabetesurinary_tract_infections/csv/conditions.csv')

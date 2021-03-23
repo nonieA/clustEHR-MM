@@ -26,9 +26,6 @@
             "condition_type": "Gender",
             "gender": "M"
           }
-        },
-        {
-          "transition": "Terminal"
         }
       ]
     },

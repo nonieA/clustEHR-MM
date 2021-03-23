@@ -33,15 +33,28 @@ def get_edit_states(top_dict):
 def transition_multiplier(transit_dict,mult, states):
     transit_dict_new = transit_dict.copy()
     states = states + ['Terminal']
+
     dist = [i['distribution'] for i in transit_dict_new if i['transition'] not in states]
-    if mult > 1/sum(dist):
-        mult = 1/sum(dist)
-    for i in transit_dict_new:
-        x = i['distribution']
-        if i['transition'] in states:
-            i['distribution'] = 1 - 2* sum(dist)
-        else:
-            i['distribution'] = x * mult
+    if isinstance(dist[0],dict):
+        dist2 = [j for i in dist for j in i.values() if isinstance(j,float)]
+        if mult > 1/sum(dist2):
+            mult = 1/sum(dist2)
+        num_key = [k for k,v in dist[0].items() if isinstance(v,float)][0]
+        for i in transit_dict_new:
+            x = i['distribution'][num_key]
+            if i['transition'] in states:
+                i['distribution'][num_key] = 1 - mult * sum(dist2)
+            else:
+                i['distribution'][num_key] = x * mult
+    else:
+        if mult > 1/sum(dist):
+            mult = 1/sum(dist)
+        for i in transit_dict_new:
+            x = i['distribution']
+            if i['transition'] in states:
+                i['distribution'] = 1 - mult * sum(dist)
+            else:
+                i['distribution'] = x * mult
     return transit_dict_new
 
 def rename_transitions(state_dict,states_list):
@@ -124,9 +137,10 @@ def write_top_dict(dis_top_dict,disease,mult):
         transit_name = [i for i in edit_dict.keys() if 'transition' in i][0]
         if transit_name == 'complex_transition':
             for ind,val in enumerate(top_dict_copy[i][transit_name]):
-                top_dict_copy[i][transit_name][ind]['distributions'] = transition_multiplier(val['distributions'],
-                                                                                             mult,
-                                                                                             list(top_dict_copy.keys()))
+                if 'distributions' in val.keys():
+                    top_dict_copy[i][transit_name][ind]['distributions'] = transition_multiplier(val['distributions'],
+                                                                                                 mult,
+                                                                                                 list(top_dict_copy.keys()))
         else:
             top_dict_copy[i][transit_name] = transition_multiplier(top_dict_copy[i][transit_name],
                                                                    mult,
@@ -221,7 +235,7 @@ def write_new_folder(disease_a,disease_b,out_folder,mult,addition,test = False):
     else:
         new_top = write_top_dict(top_dict,disease_a,mult)
     new_disease['states'] = {**new_top,**bottom_dict}
-    full_disease_out =  out_folder + '/' + disease_b + '_' + addition
+    full_disease_out = out_folder + '/' + disease_b + '_' + addition
 
     if os.path.isdir(out_folder) == False:
         os.mkdir(out_folder)
@@ -243,11 +257,14 @@ def write_new_folder(disease_a,disease_b,out_folder,mult,addition,test = False):
 
 if __name__ == '__main__':
 
-    with open('modules/module_bases/copd/copd_top.json') as fb:
-        copd_top = json.load(fb)
+    with open('modules/module_bases/appendicitis/appendicitis_top.json') as fb:
+        appendicitis_top = json.load(fb)
 
 
     with open('modules/module_bases/osteoporosis/osteoporosis_top.json') as fl:
         osteoporosis_top = json.load(fl)
 
+
+    with open('test/test2/appendicitis_new_test/appendicitis_new_test.json') as fl:
+        app = json.load(fl)
     write_new_folder('diabetes', 'gout', 'test9', 2, 'test')
