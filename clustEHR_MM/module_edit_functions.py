@@ -96,7 +96,87 @@ def rename_states(top_dict,old = True):
         new_dict = {k + '_new':rename_transitions(v,top_dict.keys()) for k,v in top_dict.items()}
     return new_dict
 
-def write_top_dict(dis_top_dict,disease,mult):
+def write_conditional(disease):
+    disease_cond = {
+        'appendicitis':['appendicitis','equals'],
+        'asthma':['asthma_condition','not_nil'],
+        'attention_deficit_disorder':['Child_attention_deficit_disorder','equals'],
+        'breast_cancer':['breast_cancer_condition','not_nil'],
+        'bronchitis':['Acute_bronchitis','equals'],
+        'colorectal_cancer':['colorectal_cancer_stage','not_nil'],
+        'congestive_heart_failure':['chf','not nil'],
+        'copd':['copd variant','not_nil'],
+        'cystic_fibrosis':['Cystic_Fibrosis','equals'],
+        'dermatitis':['Dermatitis','not_nil'],
+        'Diabetes':['diabetes','equals'],
+        'diabetes': ['diabetes', 'equals'],
+        'ear_infections':['Otitis_Media','equals'],
+        'epilepsy':['Seizure_disorder','equals'],
+        'fibromyalgia':['Primary_fibromyalgia_syndrome','equals'],
+        'gallstones':['Cholelithiasis','equals'],
+        'gout':['Gout','equals'],
+        'hypothyroidism':['Idiopathic_atrophic_hypothyrodism','equals'],
+        'lung_cancer':['Lung Cancer','not_nil'],
+        'sore_throat':['Sore Throat Condition','not_nil'],
+        'urinary_tract_infections':['uti','not_nil']
+    }
+
+    if disease_cond[disease][1] == 'not_nil':
+        if_dict = {
+            "condition_type": "Attribute",
+            "attribute": disease_cond[disease][0],
+            "operator": 'is not nil',
+        }
+    else:
+        if_dict = {
+            "condition_type": "Attribute",
+            "attribute": disease_cond[disease][0],
+            "operator": '==',
+            'value':True
+            }
+
+    return if_dict
+
+def write_and_condition(diseases):
+    if_dict = {
+        "condition_type":"And",
+        "conditions":[write_conditional(i) for i in diseases]
+    }
+
+def delay_state(time,units):
+    if isinstance(time,list):
+        state = {
+            "type":"Delay",
+            "range": {
+                "low": min(time),
+                "high":max(time),
+                'units':units
+            },
+            "direct_transition":'old_initial'
+        }
+    else:
+        state = {
+            "type":"Delay",
+            "exact":{
+                "quantity":time,
+                "units":units
+            },
+            "direct_transition":'old_initial'
+        }
+    return state
+
+
+def write_top_dict(dis_top_dict,disease,mult, time_delay = None,units = None):
+    if time_delay == None:
+        end_transition = 'old_initial'
+    else:
+        end_transition = 'time_delay'
+
+    if isinstance(disease,list):
+        condition_dict = write_and_condition(disease)
+    else:
+        condition_dict = write_conditional(disease)
+
     new_top = {
             "Initial": {
       "type": "Initial",
@@ -108,7 +188,7 @@ def write_top_dict(dis_top_dict,disease,mult):
       "range": {
         "low": 1,
         "high": 2,
-        "unit": "years"
+        "unit": "weeks"
       },
       "direct_transition": "disease_based_transition"
     },
@@ -116,19 +196,18 @@ def write_top_dict(dis_top_dict,disease,mult):
     "disease_based_transition":{
         "type": "Simple",
         "conditional_transition":[{
-            "transition": 'old_initial',
-        "condition": {
-            "condition_type": "Attribute",
-            "attribute": disease,
-            "operator": '==',
-            'value':True
-            }
+            "transition": end_transition,
+        "condition": condition_dict
         },
         {
         "transition": "Delay_Until_Disease"
         }]
     }
     }
+
+    if time_delay != None:
+        new_top['time_delay'] = delay_state(time_delay,units)
+
     top_dict_copy = copy.deepcopy(dis_top_dict)
     end_states = get_edit_states(top_dict_copy)
 
@@ -155,6 +234,7 @@ def write_top_dict(dis_top_dict,disease,mult):
     return new_top
 
 def write_test_dict(dis_top_dict,disease,mult):
+
     new_top = {
             "Initial": {
       "type": "Initial",
@@ -181,12 +261,7 @@ def write_test_dict(dis_top_dict,disease,mult):
         "type": "Simple",
         "conditional_transition":[{
             "transition": 'test_disease',
-        "condition": {
-            "condition_type": "Attribute",
-            "attribute": disease,
-            "operator": '==',
-            'value':True
-            }
+        "condition": write_conditional(disease)
         },
         {
         "transition": "Delay_Until_Disease"
@@ -257,8 +332,8 @@ def write_new_folder(disease_a,disease_b,out_folder,mult,addition,test = False):
 
 if __name__ == '__main__':
 
-    with open('modules/module_bases/appendicitis/appendicitis_top.json') as fb:
-        appendicitis_top = json.load(fb)
+    with open('modules/module_bases/gout/gout_top.json') as fb:
+        gout_top = json.load(fb)
 
 
     with open('modules/module_bases/osteoporosis/osteoporosis_top.json') as fl:
@@ -268,3 +343,6 @@ if __name__ == '__main__':
     with open('test/test2/appendicitis_new_test/appendicitis_new_test.json') as fl:
         app = json.load(fl)
     write_new_folder('diabetes', 'gout', 'test9', 2, 'test')
+
+    modules = os.listdir('modules/module_bases')
+    [write_new_folder(i,'gout','test/test2/modules',2,addition = 'disease_a_test' + i,test =True) for i in modules]
