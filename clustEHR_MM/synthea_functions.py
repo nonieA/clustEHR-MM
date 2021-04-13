@@ -2,29 +2,29 @@ import clustEHR_MM.module_edit_functions as mef
 import subprocess
 import pandas as pd
 import json
+import os
+from shutil import copytree, copyfile, rmtree
 
-def run_synthea(disease,module_file, pop,file_out,seed,addition):
+def copy_folders(module_file):
+        existing_modules = os.listdir(module_file)
+        copy_files = [i for i in os.listdir('local_modules/all_local/') if '.json' in i]
+        new_disease_list = [i for i in copy_files if i not in existing_modules]
+        for i in new_disease_list:
+                copyfile('local_modules/all_local/' + i  ,module_file + '/' + i)
+        folders = ['breast_cancer', 'dermatitis', 'lung_cancer']
 
-        module_str = module_file + '/' + disease + '_' + addition + ' -d test/modules_name_test/ear_infections'
+        for i in folders:
+                copytree('local_modules/all_local/' + i, module_file + '/' + i)
 
-        synth_cmd = ("java -jar clustEHR_MM/synthea-with-dependencies.jar -a 18-100 -d " +
-                 module_str +
-                 " -p " +
-                 str(pop) +
-                 " -s " +
-                 str(seed) +
-                 " -c clustEHR_MM/synthea_config.txt --exporter.baseDirectory " +
-                 file_out)
+def create_folders(module_file):
+        if os.path.isdir(module_file):
+                rmtree(module_file)
+        os.mkdir(module_file)
 
-        run_thing = subprocess.run(synth_cmd, stdout=subprocess.PIPE)
-        if run_thing.stdout.decode('utf-8').find('[0 loaded]') > -1:
-                raise ValueError('so the disease input doesnt link to a module')
 
-def run_synthea2(module_file, pop,file_out,seed,addition):
+def run_synthea(module_file, pop,file_out,seed):
 
-        modules = os.listdir(module_file)
-        module_list = ['-d ' + module_file + '/' + i for i in modules if addition in i]
-        module_str = ' '.join([i for i in module_list])
+        module_str = '-d ' + module_file
 
         synth_cmd = ("java -jar clustEHR_MM/synthea-with-dependencies.jar -a 18-100 " +
                  module_str +
@@ -39,9 +39,12 @@ def run_synthea2(module_file, pop,file_out,seed,addition):
         if run_thing.stdout.decode('utf-8').find('[0 loaded]') > -1:
                 raise ValueError('so the disease input doesnt link to a module')
 
-def run_function(disease_a,disease_b,module_out,csv_out,addition,pop,seed,mult,test):
-        mef.write_new_folder(disease_a,disease_b,module_out,mult,addition,test)
-        run_synthea(disease_b,module_out,pop,csv_out,seed,addition)
+
+def run_function(disease_a,disease_b,module_out,csv_out,pop,seed,mult,test):
+        create_folders(module_out)
+        mef.write_new_folder(disease_a,disease_b,module_out,mult,test)
+        copy_folders(module_out)
+        run_synthea(module_out,pop,csv_out,seed)
 
 def get_counts(disease_a,disease_b,csv_file,cond_dict):
         conditions = pd.read_csv(csv_file + '/csv/conditions.csv')

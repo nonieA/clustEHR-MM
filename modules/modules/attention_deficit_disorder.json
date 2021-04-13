@@ -58,6 +58,7 @@
     "ADHD": {
       "type": "ConditionOnset",
       "target_encounter": "ADHD_Diagnosis",
+      "assign_to_attribute":"adhd",
       "codes": [
         {
           "system": "SNOMED-CT",

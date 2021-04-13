@@ -1,6 +1,6 @@
 import json
 import os
-import pandas
+import pandas as pd
 import copy
 from shutil import copytree
 import re
@@ -182,3 +182,47 @@ def test_attribute(attribute,logic,pop,disease_a,cond_dict,condition = None, ref
     out = get_counts(disease_a,'Stomatitis','test/csv_name_test/' + addition,cond_dict)
 
     return out
+def get_counts_small(bin_df,disease_a,disease_b):
+
+    if (disease_b in bin_df.columns) and (disease_a in bin_df.columns):
+        no_disease_a = len(bin_df[(bin_df[disease_b] == 1) & (bin_df[disease_a] == 0)])
+        with_disease_a = len(bin_df[(bin_df[disease_b] == 1) & (bin_df[disease_a] == 1)])
+        just_disease_a = len(bin_df[bin_df[disease_a] == 1])
+    elif (disease_b not in bin_df.columns) and (disease_a in bin_df.columns):
+        no_disease_a = 0
+        with_disease_a = 0
+        just_disease_a = len(bin_df[bin_df[disease_a] == 1])
+    else:
+        no_disease_a = 0
+        with_disease_a = 0
+        just_disease_a = 0
+
+    out_dict = {
+        disease_b + '_no_' + disease_a: no_disease_a,
+        disease_b + '_and_' + disease_a: with_disease_a,
+        'just_' + disease_a: just_disease_a
+    }
+    return out_dict
+
+def replace_disease(var,cond_dict):
+    cond_list = [j for i in cond_dict.values() for j in i]
+    if var in cond_list:
+        for k, v in cond_dict.items():
+            if var in v:
+                return k
+    else:
+        return var
+
+def big_pop_numbers(disease_a,disease_list,csv_out,cond_dict):
+    conditions = pd.read_csv(csv_out + '/csv/conditions.csv')
+    conditions2 = conditions[['PATIENT', 'DESCRIPTION']]
+    conditions2['DESCRIPTION'] = conditions2['DESCRIPTION'].apply(lambda x: replace_disease(x, cond_dict))
+    conditions2 = conditions2[conditions2['DESCRIPTION'].isin(list(cond_dict.keys()))]
+
+    conditions2['value'] = 1
+    cond3 = conditions2.groupby(['PATIENT', 'DESCRIPTION'])['value'].count().reset_index()
+    cond4 = cond3.pivot_table(index='PATIENT', columns='DESCRIPTION', values='value', fill_value=0)
+    disease_list2 = copy.deepcopy(disease_list)
+    disease_list2.remove(disease_a)
+    out_dict = {disease_a + '-' + i:get_counts_small(cond4,disease_a,i) for i in disease_list2}
+    return out_dict

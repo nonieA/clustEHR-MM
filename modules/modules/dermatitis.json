@@ -59,7 +59,7 @@
         },
         {
           "distribution": 0.65,
-          "transition": "Terminal"
+          "transition": "set_attribute"
         }
       ]
     },
@@ -84,7 +84,7 @@
         },
         {
           "distribution": 0.95375,
-          "transition": "Terminal"
+          "transition": "set_attribute"
         }
       ]
     },
@@ -682,6 +682,12 @@
     "End_Flare_Up_Encounter": {
       "type": "EncounterEnd",
       "direct_transition": "Treating_Flare_Up"
+    },
+    "set_attribute": {
+      "type": "SetAttribute",
+      "attribute": "not_atopic",
+      "direct_transition": "Terminal",
+      "value": "'test'"
     }
   },
   "gmf_version": 1
