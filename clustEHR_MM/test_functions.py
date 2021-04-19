@@ -185,9 +185,9 @@ def test_attribute(attribute,logic,pop,disease_a,cond_dict,condition = None, ref
 def get_counts_small(bin_df,disease_a,disease_b):
 
     if (disease_b in bin_df.columns) and (disease_a in bin_df.columns):
-        no_disease_a = len(bin_df[(bin_df[disease_b] == 1) & (bin_df[disease_a] == 0)])
-        with_disease_a = len(bin_df[(bin_df[disease_b] == 1) & (bin_df[disease_a] == 1)])
-        just_disease_a = len(bin_df[bin_df[disease_a] == 1])
+        no_disease_a = len(bin_df[(bin_df[disease_b] > 0) & (bin_df[disease_a] == 0)])
+        with_disease_a = len(bin_df[(bin_df[disease_b] > 0) & (bin_df[disease_a] > 0)])
+        just_disease_a = len(bin_df[bin_df[disease_a] > 0])
     elif (disease_b not in bin_df.columns) and (disease_a in bin_df.columns):
         no_disease_a = 0
         with_disease_a = 0
@@ -226,3 +226,4 @@ def big_pop_numbers(disease_a,disease_list,csv_out,cond_dict):
     disease_list2.remove(disease_a)
     out_dict = {disease_a + '-' + i:get_counts_small(cond4,disease_a,i) for i in disease_list2}
     return out_dict
+

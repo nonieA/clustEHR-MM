@@ -3,29 +3,35 @@ import re
 import os
 import pandas as pd
 
-disease_a = 'copd'
-disease_b = 'Stomatitis'
+disease_a = 'breast_cancer'
+disease_b = 'gout'
+pop = 10000
 with open('data/processed/disease_conditions.json') as gf:
     cond_dict = json.load(gf)
 
 conditions = pd.read_csv('output/csv/conditions.csv')
 conditions2 = conditions[['PATIENT','DESCRIPTION']]
-if disease_a in cond_dict.keys():
-    conditions2['DESCRIPTION'] = conditions2['DESCRIPTION'].apply(
-        lambda x: disease_a if x in cond_dict[disease_a] else x)
 
+conditions2['DESCRIPTION'] = conditions2['DESCRIPTION'].apply(
+    lambda x: disease_a if x in cond_dict[disease_a] else x)
+
+
+conditions2['DESCRIPTION'] = conditions2['DESCRIPTION'].apply(
+    lambda x: disease_b if x in cond_dict[disease_b] else x)
 
 conditions2['value'] = 1
 cond3 = conditions2.groupby(['PATIENT', 'DESCRIPTION'])['value'].count().reset_index()
 cond4 = cond3.pivot_table(index='PATIENT', columns='DESCRIPTION', values='value', fill_value=0)
 
 
-no_disease_a = len(cond4[(cond4[disease_b] == 1) & (cond4[disease_a] == 0)])
-with_disease_a = len(cond4[(cond4[disease_b] == 1) & (cond4[disease_a] == 1)])
-just_disease_a = len(cond4[cond4[disease_a] == 1])
-print(no_disease_a)
-print(with_disease_a)
-print(just_disease_a)
+no_disease_a = len(cond4[(cond4[disease_b] > 0) & (cond4[disease_a] == 0)])
+with_disease_a = len(cond4[(cond4[disease_b] > 0) & (cond4[disease_a] > 0)])
+just_disease_a = len(cond4[cond4[disease_a] > 0])
+with_disease_a_prev = with_disease_a/just_disease_a
+no_d_a_prev = no_disease_a/(pop-just_disease_a)
+print(with_disease_a_prev)
+print(no_d_a_prev)
+print(with_disease_a_prev/no_d_a_prev)
 
 
 asthma_conds = pd.read_csv('test/csv_name_test/asthma_careplan_not_nil/csv/conditions.csv')

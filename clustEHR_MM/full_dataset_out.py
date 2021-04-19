@@ -86,7 +86,7 @@ def get_age_df(pats,conds,cond_dict):
     return conds
 
 def ajacency(df_bin):
-    return df_bin.corr(method='pearsonn')
+    return df_bin.corr(method='pearson')
 
 def create_synthetic_data(group_df,out_file,module_out,population,age_df,bin_df,adjacency,cond_dict):
 
@@ -157,6 +157,7 @@ def create_argparser():
         default=True,
         type=bool
     )
+    return parser
 
 if __name__ == '__main__':
 
@@ -217,5 +218,5 @@ if __name__ == '__main__':
         age_df=args.age_csv,
         bin_df=args.binary_csv,
         adjacency=args.adjacency_csv,
-        cond_dict
+        cond_dict = cond_dict
     )
